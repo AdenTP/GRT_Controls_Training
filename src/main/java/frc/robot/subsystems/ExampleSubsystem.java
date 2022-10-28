@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 public class ExampleSubsystem extends SubsystemBase {
   
@@ -40,7 +39,7 @@ public class ExampleSubsystem extends SubsystemBase {
     conveyorMotor.configFactoryDefault();
     flywheelMotorLeader.restoreFactoryDefaults();
     flywheelMotorFollower.restoreFactoryDefaults();
-    conveyorMotor.setNeutralMode(NeutralMode.Coast);
+    conveyorMotor.setNeutralMode(NeutralMode.Brake);
     flywheelMotorLeader.setIdleMode(IdleMode.kCoast);
     flywheelMotorFollower.setIdleMode(IdleMode.kCoast);
     flywheelMotorFollower.follow(flywheelMotorLeader);
@@ -51,6 +50,7 @@ public class ExampleSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     
 
+
     //state checks to start storing/shooting
 
     if (storing ? false : controller.getAButtonPressed()) { //ternary used so it doesn't check, meaning shoot will happen after storage finishes
@@ -58,35 +58,35 @@ public class ExampleSubsystem extends SubsystemBase {
       conveyorRun = true;
     }
 
-    if (!shooting && heldBalls < 2 && sensors.get(0).get() > 0.9) { //if not already shooting and storage is not already full and entrance has a ball, start storing
+    if (!shooting && heldBalls < 3 && sensors.get(0).get() > 0.38) { //if not already shooting and storage is not already full and entrance has a ball, start storing
       storing = true;
       conveyorRun = true;
     }
 
     //state checks to end storing/shooting
 
-    if (storing && sensors.get(1).get() > 0.9) { //if ball passed middle sensor, stop running and log that a ball was stored
+    if (storing && sensors.get(1).get() > 0.38) { //if ball passed middle sensor, stop running and log that a ball was stored
       storing = false; 
       conveyorRun = false;
       heldBalls++;
     }
 
-    if (shooting && sensors.get(2).get() > 0.9) { //if ball passed top sensor, in position to shoot, so we run flywheel for a second
+    if (shooting && !flywheelRun && sensors.get(2).get() > 0.122) { //if ball passed top sensor, in position to shoot, so we run flywheel for a second
       timer.reset();
       timer.start();
-      conveyorRun = false;
       flywheelRun = true;
     }
-    if (shooting && timer.get() >= 1.0) { //if a second has gone by, stop shooting
+    if (shooting && timer.get() >= 0.5) { //if a second has gone by, stop shooting
       timer.stop();
       shooting = false;
+      conveyorRun = false;
       flywheelRun = false;
       heldBalls--;
     }
     //run motors
-    conveyorMotor.set(ControlMode.PercentOutput, conveyorRun ? 0.5 : 0);
+    conveyorMotor.set(ControlMode.PercentOutput, conveyorRun ? -0.50 : 0);
     
-    flywheelMotorLeader.set(flywheelRun ? 0.75 : 0);
+    flywheelMotorLeader.set(flywheelRun ? -0.25 : 0);
   }
   
 
