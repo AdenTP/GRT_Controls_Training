@@ -5,10 +5,17 @@
 package frc.robot.subsystems;
 
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -17,45 +24,71 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 public class ExampleSubsystem extends SubsystemBase {
   
  
-  private final CANSparkMax motor1 = new CANSparkMax(17, MotorType.kBrushless);
-  private final XboxController controller = new XboxController(0);
-  private final JoystickButton button = new JoystickButton(controller, XboxController.Button.kA.value);
-  private boolean pressed = true;
-  private final CANSparkMax motor2 = new CANSparkMax(1, MotorType.kBrushless);
-  private final Timer timer = new Timer();
+  private final List<AnalogPotentiometer> sensors = Arrays.asList(new AnalogPotentiometer(0), new AnalogPotentiometer(1), new AnalogPotentiometer(2)); //array of sensors so access makes more sense, scaled to 30cm
+  private final TalonSRX conveyorMotor = new TalonSRX(8); //Talon for conveyor
+  private final CANSparkMax flywheelMotorLeader = new CANSparkMax(3, MotorType.kBrushless), flywheelMotorFollower = new CANSparkMax(16, MotorType.kBrushless); //SparkMaxes for flywheel
+  private final Timer timer = new Timer(); //timer for flywheel
+  private final XboxController controller = new XboxController(0); //controller      bottom text
+  private int heldBalls = 0; //keep track of how many balls are stored
+  private boolean conveyorRun = false; //run conveyor?
+  private boolean flywheelRun = false; //run flywheel?
+  private boolean storing = false;
+  private boolean shooting = false;
 
   /** Creates a new ExampleSubsystem. */
   public ExampleSubsystem() {
-    motor1.restoreFactoryDefaults();
-    motor2.restoreFactoryDefaults();
-    motor1.setIdleMode(IdleMode.kBrake);
-    motor2.setIdleMode(IdleMode.kBrake);
-    motor2.follow(motor1);
+    conveyorMotor.configFactoryDefault();
+    flywheelMotorLeader.restoreFactoryDefaults();
+    flywheelMotorFollower.restoreFactoryDefaults();
+    conveyorMotor.setNeutralMode(NeutralMode.Coast);
+    flywheelMotorLeader.setIdleMode(IdleMode.kCoast);
+    flywheelMotorFollower.setIdleMode(IdleMode.kCoast);
+    flywheelMotorFollower.follow(flywheelMotorLeader);
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    //System.out.println("Hello World");
-    /*if (controller.getAButtonPressed()) {
-      pressed = !pressed;
-    }*/
-    if (controller.getAButtonPressed()) {
+    
+
+    //state checks to start storing/shooting
+
+    if (storing ? false : controller.getAButtonPressed()) { //ternary used so it doesn't check, meaning shoot will happen after storage finishes
+      shooting = true;
+      conveyorRun = true;
+    }
+
+    if (!shooting && heldBalls < 2 && sensors.get(0).get() > 0.9) { //if not already shooting and storage is not already full and entrance has a ball, start storing
+      storing = true;
+      conveyorRun = true;
+    }
+
+    //state checks to end storing/shooting
+
+    if (storing && sensors.get(1).get() > 0.9) { //if ball passed middle sensor, stop running and log that a ball was stored
+      storing = false; 
+      conveyorRun = false;
+      heldBalls++;
+    }
+
+    if (shooting && sensors.get(2).get() > 0.9) { //if ball passed top sensor, in position to shoot, so we run flywheel for a second
       timer.reset();
       timer.start();
+      conveyorRun = false;
+      flywheelRun = true;
     }
-    //if (pressed) {
-      if (!timer.hasElapsed(4)) {
-        motor1.set(timer.get()/8);
-      } else if (!timer.hasElapsed(6)) {
-        motor1.set(0.5);
-      } else if (!timer.hasElapsed(10)) {
-        motor1.set(0.5 - timer.get()/8);
-      } else {
-        motor1.set(0);
-      }
-    //}
+    if (shooting && timer.get() >= 1.0) { //if a second has gone by, stop shooting
+      timer.stop();
+      shooting = false;
+      flywheelRun = false;
+      heldBalls--;
+    }
+    //run motors
+    conveyorMotor.set(ControlMode.PercentOutput, conveyorRun ? 0.5 : 0);
+    
+    flywheelMotorLeader.set(flywheelRun ? 0.75 : 0);
   }
+  
 
   @Override
   public void simulationPeriodic() {
