@@ -2,6 +2,9 @@
 
 **Notes on the funny**
 
+oh I forgot to say all this stuff is tested and works for sure except for shoot_all
+I had it shooting all instead of one originally but I didn't know why so that doesn't count
+
 Some notes won't be reflected in commit history because I couldn't figure out how to commit to git and just wrote the thing.
 UPDATE: ok I also didn't commit a couple intermediate versions because all the changes were in remote and never pushed or something, idk
 if it works it works, I'll learn Git stuff soonish
@@ -64,4 +67,4 @@ Storage was inefficient. Setting motors to max speed would also improve the devi
 
 **Conclusion**
 
-thumbsup emoji
+thumbsup emoji                                                           
