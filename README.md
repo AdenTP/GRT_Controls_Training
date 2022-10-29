@@ -29,6 +29,23 @@ Not much to say. The reading for empty space was 0.35 and the reading for a ball
 
 **Storing**
 Yes, I switched the order of these operations. Yes, it's easily fixable with a cut and paste. No, I won't. My storage solution isn't very efficient. The space between sensors 1 and 2 is pretty big, and if a ball has reached sensor 2 it's too high. I could just have it run for a fixed time instead of needing a sensor to be tripped, but that would need to be changed if conveyorMotor's speed was changed, and I failed division. Another alternative would be, in the case where heldBalls > 1, for it to start spinning, mark when a ball leaves sensor 1, and stop when a second ball reaches it. I'd probably do this if I had more time to test the sensors, since the magic number would need to be a little more precise. I'll have code for this in a comment somewhere probably.
+
+update: jk it's right here now too
+```
+  if (storing && heldBalls >= 1 && sensors.get(1).get() < 0.3) {
+    pass = true;
+  }
+
+  //if reading dips down, there's empty space, so it should stop the next time it sees it go back up
+    
+  if (storing && pass && sensors.get(1).get() > 0.3) {
+    storing = false;
+    conveyorRun = false;
+    heldBalls++;
+  }
+
+  if heldBalls == 0 it should use old process
+ ```
   
 **Shooting**
 Two stages of shooting: moving the conveyor to get a ball in position to shoot, then launching it with the flywheel. Especially with a lower conveyor speed, I didn't want to needlessly run the flywheel while the ball was still moving up into position. This only runs the flywheel when necessary, using an arbitary time value that could definitely be tuned with more time.
