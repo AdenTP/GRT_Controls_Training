@@ -33,6 +33,7 @@ public class ExampleSubsystem extends SubsystemBase {
   private boolean flywheelRun = false; //run flywheel?
   private boolean storing = false;
   private boolean shooting = false;
+  private boolean shoot_all = false;
 
   /** Creates a new ExampleSubsystem. */
   public ExampleSubsystem() {
@@ -50,22 +51,27 @@ public class ExampleSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
     
 
-
     //state checks to start storing/shooting
 
-    if (storing ? false : controller.getAButtonPressed()) { //ternary used so it doesn't check, meaning shoot will happen after storage finishes
+    if (storing ? false : controller.getAButtonPressed()) { //shoot one
       shooting = true;
+      shoot_all = false;
+      conveyorRun = true;
+    }
+    if (storing ? false : controller.getBButtonPressed()) { //shoot all
+      shooting = true;
+      shoot_all = true;
       conveyorRun = true;
     }
 
-    if (!shooting && heldBalls < 3 && sensors.get(0).get() > 0.38) { //if not already shooting and storage is not already full and entrance has a ball, start storing
+    if (!shooting && sensors.get(0).get() > 0.38) { //if not already shooting and storage is not already full and entrance has a ball, start storing
       storing = true;
       conveyorRun = true;
     }
 
     //state checks to end storing/shooting
 
-    if (storing && sensors.get(1).get() > 0.38) { //if ball passed middle sensor, stop running and log that a ball was stored
+    if (storing && sensors.get(1).get() > 0.3) { //if ball passed middle sensor, stop running and log that a ball was stored
       storing = false; 
       conveyorRun = false;
       heldBalls++;
@@ -76,8 +82,9 @@ public class ExampleSubsystem extends SubsystemBase {
       timer.start();
       flywheelRun = true;
     }
-    if (shooting && timer.get() >= 0.5) { //if a second has gone by, stop shooting
+    if (shooting && timer.get() >= 0.75 && (shoot_all ? heldBalls == 0 : true)) { //if a second has gone by, stop shooting
       timer.stop();
+      timer.reset();
       shooting = false;
       conveyorRun = false;
       flywheelRun = false;
